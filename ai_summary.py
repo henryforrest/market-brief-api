@@ -37,7 +37,7 @@ def generate_ai_summary(ticker: str, metrics: dict) -> str:
         json={
             "model": "meta-llama/Llama-3.1-8B-Instruct",
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 200
+            "max_tokens": 500
         },
         timeout=30
     )
