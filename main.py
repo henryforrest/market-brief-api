@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from market_data import fetch_stock_data
+from get_data import TickerNotFoundError
 from ai_summary import generate_ai_summary
 import traceback
 
@@ -16,6 +17,9 @@ def get_stock(ticker: str):
             **stock_data,
             "ai_summary": ai_summary
         }
+
+    except TickerNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Unknown ticker: {ticker.upper()}")
 
     except Exception as e:
         print("ERROR:", repr(e))
