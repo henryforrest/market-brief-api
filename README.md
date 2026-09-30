@@ -36,11 +36,11 @@ Response shape (values for Apple, September 2026, rounded):
 }
 ```
 
-Ratios are returned as decimals, not percentages (`-0.374` is a 37.4% drawdown). Fields Yahoo does not supply for a given instrument come back as `null`. Any failure — an unknown ticker, an upstream data error, a model error — is returned as HTTP 500 with the exception message in `detail`, for example `{"detail": "No data found for ticker: ZZZZ"}`. FastAPI's interactive docs are served at `/docs`.
+Ratios are returned as decimals, not percentages (`-0.374` is a 37.4% drawdown). Fields Yahoo does not supply for a given instrument come back as `null`. A ticker Yahoo Finance has no price history for is returned as HTTP 404 with `{"detail": "Unknown ticker: ZZZZ"}`; the iOS app treats a 404 as an unknown ticker. Any other failure — an upstream data error, a model error — is returned as HTTP 500 with the exception message in `detail`. FastAPI's interactive docs are served at `/docs`.
 
 ## Metrics
 
-The four risk/return metrics are computed in `get_metrics.py` from daily prices fetched with `yfinance` (`Ticker.history`) from 1 January 2015 to the present, using simple daily returns (`pct_change`) and a 252-trading-day year.
+The four risk/return metrics are computed in `get_metrics.py` from daily closing prices fetched with `yfinance` (`Ticker.history`) from 1 January 2015 to the present, using simple daily returns (`pct_change`) and a 252-trading-day year. The price series is selected in one place, `get_data.get_prices`: the adjusted close where Yahoo supplies one, otherwise the close, which `history()` returns already adjusted for splits and dividends.
 
 - **Maximum drawdown** — prices are normalised to the first observation, the running peak is tracked with `cummax`, and the drawdown series is `equity / peak - 1`; the metric is its minimum, i.e. the worst peak-to-trough fall over the whole window.
 - **Sharpe ratio** — daily excess returns are the daily returns less a 1% annual risk-free rate divided by 252; the ratio is their mean over their standard deviation, annualised by √252. Returns `0.0` if the standard deviation is zero or non-finite.
@@ -80,6 +80,17 @@ Or with Docker — `.dockerignore` keeps `.env` out of the image, so the token h
 docker build -t market-brief-api .
 docker run -p 8080:8080 -e HF_TOKEN=<your Hugging Face token> market-brief-api
 ```
+
+## Tests
+
+The suite in `tests/` runs offline: `yfinance` is stubbed with canned price history and fundamentals and the Hugging Face call is replaced, so no test touches the network or needs a real token.
+
+```
+pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -q
+```
+
+It checks the metrics against small synthetic series with known answers (a flat series gives zero for every metric, a 50% fall from the peak gives a drawdown of `-0.5`, a year of constant daily growth gives the compounded rate, and a frame whose Open and Close columns differ proves the metrics follow Close), the price selection (adjusted close preferred, close otherwise) and the endpoint through FastAPI's `TestClient` (the full response document, the upper-cased ticker, 404 for an unknown ticker and 500 with the message for anything else). `.github/workflows/tests.yml` runs the suite on every push and pull request with Python 3.11.
 
 ## Deployment
 

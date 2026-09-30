@@ -1,22 +1,27 @@
 import yfinance as yf
 from get_metrics import calculate_returns
-from get_data import get_stock_data
+from get_data import get_stock_data, get_prices
 from get_metrics import calculate_all_metrics
 from company import get_company_summary 
 
 def fetch_stock_data(ticker: str):
     ticker = ticker.upper()
-    stock = yf.Ticker(ticker)
-    info = stock.info
 
-    prices = get_stock_data(ticker)
+    # Fetch the price history first: get_stock_data raises TickerNotFoundError when
+    # Yahoo has no rows for the ticker, so an unknown ticker fails here, before any
+    # fundamentals are requested.
+    history = get_stock_data(ticker)
+    prices = get_prices(history)
     returns = calculate_returns(prices)
 
     metrics = calculate_all_metrics(prices, returns)
-    summary = get_company_summary(ticker)
 
+    stock = yf.Ticker(ticker)
+    info = stock.info
     if info is None or "shortName" not in info:
-        raise ValueError("Invalid ticker")
+        raise ValueError(f"No company data found for ticker: {ticker}")
+
+    summary = get_company_summary(ticker)
 
     return {
         "ticker": ticker,

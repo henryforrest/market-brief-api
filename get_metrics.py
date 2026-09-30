@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
+from get_data import get_prices
 
 def calculate_returns(prices):
     if isinstance(prices, pd.DataFrame):
-        prices = prices.iloc[:, 0]
+        prices = get_prices(prices)
 
     returns = prices.pct_change().dropna()
     return returns
@@ -11,7 +12,7 @@ def calculate_returns(prices):
 
 def calculate_max_drawdown(prices):
     if isinstance(prices, pd.DataFrame):
-        prices = prices.iloc[:, 0]   # take the first column
+        prices = get_prices(prices)
 
     equity = prices / prices.iloc[0]
     drawdown = equity / equity.cummax() - 1
@@ -28,7 +29,7 @@ def calculate_sharpe_ratio(returns, risk_free_rate=0.01):
     if isinstance(std, pd.Series):
         std = std.mean()
 
-    if std == 0 or not np.isfinite(std):
+    if np.isclose(std, 0.0) or not np.isfinite(std):
         return 0.0
 
     mean = excess_returns.mean()
