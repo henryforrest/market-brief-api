@@ -1,6 +1,6 @@
 import yfinance as yf
 from get_metrics import calculate_returns
-from get_data import get_stock_data
+from get_data import get_stock_data, get_prices
 from get_metrics import calculate_all_metrics
 from company import get_company_summary 
 
@@ -9,7 +9,8 @@ def fetch_stock_data(ticker: str):
     stock = yf.Ticker(ticker)
     info = stock.info
 
-    prices = get_stock_data(ticker)
+    history = get_stock_data(ticker)
+    prices = get_prices(history)
     returns = calculate_returns(prices)
 
     metrics = calculate_all_metrics(prices, returns)

@@ -12,6 +12,7 @@ def get_stock_data(ticker, start_date="2015-01-01"):
     return df
 
 def get_prices(df):
+    """Return the price series the metrics use: the adjusted close if present, otherwise the close."""
     if "Adj Close" in df.columns:
         return df["Adj Close"]
     elif "Close" in df.columns:
